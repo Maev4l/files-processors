@@ -1,0 +1,12 @@
+{
+  "name": "converter",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "pdfkit": "0.13.0",
+    "winston": "3.8.2"
+  },
+  "devDependencies": {
+    "serverless": "3.23.0"
+  }
+}

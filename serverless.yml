@@ -1,0 +1,65 @@
+service: pdf-converter
+
+provider:
+  name: aws
+  versionFunctions: false
+  region: "eu-central-1"
+  profile: serverless-admin-profile
+  endpointType: REGIONAL
+  runtime: nodejs16.x
+  apiGateway:
+    disableDefaultEndpoint: false
+    minimumCompressionSize: 1024 # in bytes
+    binaryMediaTypes:
+      - "multipart/form-data"
+      - "image/jpeg"
+      - "image/jpg"
+      - "image/png"
+  iam:
+    role: arn:aws:iam::671123374425:role/lambda-vpc-execution-role
+  timeout: 30
+  tags:
+    application: "pdf-converter"
+    owner: "serverless"
+  stackTags:
+    application: "pdf-converter"
+    owner: "serverless"
+  deploymentBucket:
+    blockPublicAccess: true
+    tags:
+      application: "pdf-converter"
+      owner: "serverless"
+  environment:
+    REGION: ${self:provider.region}
+
+package:
+  exclude:
+    - .env
+    - .vscode/**
+    - .travis.yml
+    - coverage/**
+    - test/**
+
+functions:
+  converter:
+    name: pdf-converter-converter
+    handler: converter/src/handler.convert
+    memorySize: 2048
+    events:
+      - http:
+          path: /api/v1/convert
+          method: post
+          cors: true
+          #authorizer:
+          #  arn: arn:aws:cognito-idp:eu-central-1:671123374425:userpool/eu-central-1_vcPfClzJm
+  ping:
+    name: pdf-converter-ping
+    handler: converter/src/handler.ping
+    memorySize: 512
+    events:
+      - http:
+          path: /api/v1/ping
+          method: get
+          cors: true
+          #authorizer:
+          #  arn: arn:aws:cognito-idp:eu-central-1:671123374425:userpool/eu-central-1_vcPfClzJm
