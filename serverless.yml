@@ -63,17 +63,20 @@ package:
     - test/**
 
 functions:
-  #converter:
-  #  name: pdf-converter-converter
-  #  handler: converter/src/handler.convert
-  #  memorySize: 2048
-  #  events:
-  #    - http:
-  #        path: /api/v1/convert
-  #        method: post
-  #        cors: true
-  #        #authorizer:
-  #        #  arn: arn:aws:cognito-idp:eu-central-1:671123374425:userpool/eu-central-1_vcPfClzJm
+  converter:
+    name: pdf-converter-converter
+    handler: converter/src/handler.convert
+    memorySize: 2048
+    environment:
+      BUCKET: ${self:custom.config.bucketName}
+    events:
+      - s3:
+          bucket: ${self:custom.config.bucketName}
+          event: s3:ObjectCreated:*
+          existing: true
+          forceDeploy: true
+          rules:
+            - prefix: staging/
   ping:
     name: pdf-converter-ping
     handler: converter/src/handler.ping

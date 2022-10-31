@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -45,6 +46,7 @@ type PresignedUrl struct {
 	Method     string `json:"method"`
 	FileName   string `json:"fileName"`
 	Extension  string `json:"ext"`
+	Rank       int    `json:"rank"`
 }
 
 type PresignedUrlResponse struct {
@@ -108,14 +110,14 @@ func handler(event events.APIGatewayProxyRequest) (*events.APIGatewayProxyRespon
 	urls := make([]PresignedUrl, 0)
 	taskId := strings.ToUpper(strings.Replace(uuid.NewString(), "-", "", -1))
 
-	for _, document := range request.Documents {
+	for i, document := range request.Documents {
 		if document.Extension != "jpg" && document.Extension != "jpeg" && document.Extension != "png" {
 			log.Error().Err(err).Msgf("Incorrect file type: %s.%s", document.FileName, document.Extension)
 			return ApiResponse(http.StatusBadRequest, Json{"Message": "Only jpg, jpeg or png are accepted"})
 		}
 
 		documentId := strings.ToUpper(strings.Replace(uuid.NewString(), "-", "", -1))
-
+		rank := strconv.Itoa(i)
 		res, err := presignClient.PresignPutObject(
 			context.TODO(),
 			&s3.PutObjectInput{
@@ -126,6 +128,7 @@ func handler(event events.APIGatewayProxyRequest) (*events.APIGatewayProxyRespon
 					"task":      taskId,
 					"filename":  document.FileName,
 					"extension": document.Extension,
+					"rank":      rank,
 				},
 			},
 			s3.WithPresignExpires(10*time.Minute),
@@ -142,6 +145,7 @@ func handler(event events.APIGatewayProxyRequest) (*events.APIGatewayProxyRespon
 			Method:     res.Method,
 			FileName:   document.FileName,
 			Extension:  document.Extension,
+			Rank:       i,
 		}
 
 		urls = append(urls, url)

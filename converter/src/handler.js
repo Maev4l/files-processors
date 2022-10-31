@@ -1,20 +1,26 @@
-import PDFDocument from "pdfkit";
-import busboy from "busboy";
-import fs from "fs";
-import Multipart from "lambda-multipart";
+import PDFDocument from 'pdfkit';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import sizeOf from 'buffer-image-size';
 
-import loggerFactory from "./logger.js";
+import loggerFactory from './logger.js';
 
-const logger = loggerFactory.getLogger("converter");
+const logger = loggerFactory.getLogger('converter');
+
+const CONVERTED_PREFIX = 'converted';
+const region = process.env.REGION;
+const bucketName = process.env.BUCKET;
+
+const s3Client = new S3Client({ region });
 
 const makeResponse = (body = null, contentType = null, statusCode = 200) => {
   let headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Credentials": true,
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Credentials': true,
   };
 
   if (contentType) {
-    headers = { ...headers, "Content-Type": contentType };
+    headers = { ...headers, 'Content-Type': contentType };
   }
 
   let response = {
@@ -29,64 +35,92 @@ const makeResponse = (body = null, contentType = null, statusCode = 200) => {
   return response;
 };
 
-const parseForm = (body, headers) =>
-  new Promise((resolve, reject) => {
-    const contentType = headers["Content-Type"] || headers["content-type"];
-    const bb = busboy({ headers: { "content-type": contentType } });
-
-    const result = {
-      files: [],
-    };
-
-    bb.on("field", (fieldname, val) => {
-      data[fieldname] = val;
-    })
-      .on("file", (fieldname, file, filename, encoding, mimetype) => {
-        file.on("data", (data) => {
-          result.files.push({
-            file: data,
-            fileName: filename,
-            contentType: mimetype,
-          });
-        });
-      })
-      .on("finish", () => {
-        resolve(data);
-      })
-      .on("error", (err) => {
-        reject(err);
-      });
-
-    bb.write(body, "base64");
-    bb.end();
+const streamToBuffer = async (stream) => {
+  const chunks = [];
+  return new Promise((resolve, reject) => {
+    stream.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    stream.on('error', (err) => reject(err));
+    stream.on('end', () => resolve(Buffer.concat(chunks)));
   });
+};
+
+const toPDF = async (buf) =>
+  new Promise((resolve) => {
+    const doc = new PDFDocument({ size: 'A4', margin: 0 });
+
+    const buffers = [];
+    doc.on('data', buffers.push.bind(buffers));
+    doc.on('end', () => {
+      const pdfData = Buffer.concat(buffers);
+      resolve(pdfData);
+    });
+
+    // A4 size
+    doc.image(buf, 0, 0, { cover: [595.28, 841.89], valign: 'center', align: 'center' });
+    doc.end();
+  });
+
+const convertToPDF = async (documentKey) => {
+  const documentId = documentKey.split('/').pop();
+  const convertedDocumentKey = `${CONVERTED_PREFIX}/${documentId}`;
+
+  try {
+    const getObjectParams = {
+      Bucket: bucketName,
+      Key: documentKey,
+    };
+    const getObjectCommand = new GetObjectCommand(getObjectParams);
+    const { Body: body, Metadata } = await s3Client.send(getObjectCommand);
+
+    logger.info(`Document ${documentKey} fetched.`);
+
+    // Convert stream to Buffer (as GetObjectCommandOutput Body field is a stream)
+    const buf = await streamToBuffer(body);
+    // Take the size of the image
+    const { width, height } = sizeOf(buf);
+    logger.info(`Document ${documentKey} size -  width: ${width}px - height: ${height}px`);
+
+    // Convert dimensions to Postscript Points
+    const pdf = await toPDF(buf);
+
+    logger.info(`PDF generated for ${documentKey}.`);
+
+    const uploadPreview = new Upload({
+      client: s3Client,
+      params: {
+        Bucket: bucketName,
+        Key: convertedDocumentKey,
+        Body: pdf,
+        ContentType: 'application/pdf',
+        Metadata,
+      },
+    });
+
+    await uploadPreview.done();
+    logger.info(`PDF ${convertedDocumentKey} saved.`);
+  } catch (err) {
+    logger.error(`Error while processing document ${documentKey}: ${err.message}`);
+  }
+};
 
 export const convert = async (event) => {
-  logger.info(`Event: ${JSON.stringify(event)}`);
-  const { headers, body } = event;
-  //  const data = await parseForm(body, headers);
+  const { Records: records } = event;
 
-  const parser = new Multipart(event);
-
-  parser.on("field", (key, value) => {
-    logger.info("received field", key, value);
-  });
-  parser.on("file", (file) => {
-    //file.headers['content-type']
-    file.pipe(fs.createWriteStream(__dirname + "/downloads/" + file.filename));
+  const documents = [];
+  records.forEach((record) => {
+    const {
+      s3: {
+        object: { key },
+      },
+    } = record;
+    documents.push(key);
   });
 
-  parser.on("finish", function (result) {
-    //result.files (array of file streams)
-    //result.fields (object of field key/values)
-    console.log("Finished");
+  const funcs = documents.map(async (documentKey) => {
+    await convertToPDF(documentKey);
   });
 
-  logger.info(`Data: ${JSON.stringify(data)}`);
-  const doc = new PDFDocument({ size: "A4" });
-  return makeResponse({ id: "dfdfdf" });
+  await Promise.all(funcs);
 };
 
-export const ping = async (event) => {
-  return makeResponse({ message: "pong" }, "application/json");
-};
+export const ping = async () => makeResponse({ message: 'pong' }, 'application/json');
