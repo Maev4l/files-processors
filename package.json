@@ -6,12 +6,16 @@
     "compile": "webpack --config ./client/webpack.config.prod.babel.js --progress"
   },
   "dependencies": {
-    "@emotion/react": "^11.10.5",
-    "@emotion/styled": "^11.10.5",
-    "@mui/material": "^5.10.12",
-    "pdfkit": "0.13.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "@emotion/react": "11.10.5",
+    "@emotion/styled": "11.10.5",
+    "@mui/icons-material": "5.10.9",
+    "@mui/material": "5.10.12",
+    "brfs": "2.0.2",
+    "file-saver": "2.0.5",
+    "mui-file-dropzone": "4.0.2",
+    "pdfmake": "0.2.6",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@babel/core": "7.18.6",
