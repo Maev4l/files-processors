@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "scripts": {
     "serve": "webpack serve --config ./client/webpack.config.dev.babel.js --progress --color",
-    "compile": "webpack --config ./client/webpack.config.prod.babel.js --progress"
+    "compile": "webpack --config ./client/webpack.config.prod.babel.js --progress",
+    "tf-init": "cd ./infra && terraform init",
+    "tf-apply": "cd ./infra && terraform apply -auto-approve && terraform output -json > ../infra.json && aws s3 cp ../infra.json s3://global-tf-states/pdf-converter/infra.json",
+    "tf-output": "cd ./infra && terraform output -json",
+    "download-infra": "aws s3 cp s3://global-tf-states/pdf-converter/infra.json ./infra.json ",
+    "deploy-frontend": "yarn compile && node ./client/deploy"
   },
   "dependencies": {
     "@emotion/react": "11.10.5",
@@ -48,7 +53,9 @@
     "babel-plugin-dev-expression": "0.2.3",
     "babel-plugin-direct-import": "1.0.0",
     "babel-plugin-transform-react-remove-prop-types": "0.4.24",
+    "clean-webpack-plugin": "4.0.0",
     "css-loader": "6.7.1",
+    "deploy-aws-s3-cloudfront": "3.7.0",
     "eslint": "8.19.0",
     "eslint-config-airbnb": "19.0.4",
     "eslint-config-prettier": "8.5.0",

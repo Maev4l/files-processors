@@ -3,3 +3,5 @@ node_modules/
 *.http
 .bin/
 .dist/
+.terraform/
+infra.json
