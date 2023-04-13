@@ -1,9 +1,9 @@
 locals {
-  s3_origin_id = "pdf-converter-frontend"
+  s3_origin_id = "files-processors-frontend"
 }
 
 resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
-  comment = "CloudFront identity to access PDF converter frontend"
+  comment = "CloudFront identity to access Files Processors frontend"
 }
 
 
@@ -40,7 +40,7 @@ resource "aws_s3_bucket_policy" "frontend_bucket_policy" {
 
 
 resource "aws_cloudfront_distribution" "frontend_distribution" {
-  comment = "CloudFront Distribution for PDF converter frontend"
+  comment = "CloudFront Distribution for Files Processors frontend"
   origin {
     domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id   = local.s3_origin_id

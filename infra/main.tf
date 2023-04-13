@@ -2,7 +2,7 @@ terraform {
   backend "s3" {
     bucket         = "global-tf-states"
     region         = "eu-central-1"
-    key            = "pdf-converter/terraform.tfstate"
+    key            = "files-processors/terraform.tfstate"
     encrypt        = "true"
     dynamodb_table = "lock-terraform-state"
   }
@@ -13,7 +13,7 @@ provider "aws" {
   default_tags {
     tags = {
       "owner"       = "terraform"
-      "application" = "pdf-converter"
+      "application" = "files-processors"
     }
   }
 }
@@ -36,5 +36,5 @@ data "aws_route53_zone" "primary" {
 data "aws_region" "current" {}
 
 locals {
-  domain_name = "image2pdf.isnan.eu"
+  domain_name = "tools.isnan.eu"
 }
