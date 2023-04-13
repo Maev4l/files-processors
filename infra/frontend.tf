@@ -2,10 +2,13 @@ locals {
   s3_origin_id = "files-processors-frontend"
 }
 
-resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
-  comment = "CloudFront identity to access Files Processors frontend"
+resource "aws_cloudfront_origin_access_control" "origin_access_control" {
+  name                              = "origin-access-control-files-processor-frontend"
+  description                       = "CloudFront origin access control for Files Processors frontend"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
 }
-
 
 resource "aws_s3_bucket" "frontend" {
   bucket        = local.domain_name
@@ -23,12 +26,18 @@ resource "aws_s3_bucket_public_access_block" "frontend_public_access" {
 
 data "aws_iam_policy_document" "frontend_s3_policy" {
   statement {
-    actions   = ["s3:GetObject", "s3:ListBucket"]
-    resources = ["${aws_s3_bucket.frontend.arn}/*", "${aws_s3_bucket.frontend.arn}"]
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.frontend.arn}/*"]
 
     principals {
-      type        = "AWS"
-      identifiers = [aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn]
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "AWS:SourceArn"
+      values   = ["${aws_cloudfront_distribution.frontend_distribution.arn}"]
     }
   }
 }
@@ -42,12 +51,9 @@ resource "aws_s3_bucket_policy" "frontend_bucket_policy" {
 resource "aws_cloudfront_distribution" "frontend_distribution" {
   comment = "CloudFront Distribution for Files Processors frontend"
   origin {
-    domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name
-    origin_id   = local.s3_origin_id
-
-    s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
-    }
+    domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
+    origin_id                = local.s3_origin_id
+    origin_access_control_id = aws_cloudfront_origin_access_control.origin_access_control.id
   }
 
   default_root_object = "index.html"
