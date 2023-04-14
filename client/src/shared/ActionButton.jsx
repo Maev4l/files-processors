@@ -1,9 +1,9 @@
 import { Button } from '@mui/material';
 
-const ConvertButton = ({ onClick, ...rest }) => (
+const ActionButton = ({ onClick, label, ...rest }) => (
   <Button sx={{ m: '0.5rem' }} variant="contained" onClick={onClick} {...rest}>
-    Convert
+    {label}
   </Button>
 );
 
-export default ConvertButton;
+export default ActionButton;
