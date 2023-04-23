@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Grid, Typography } from '@mui/material';
+import { Grid } from '@mui/material';
 
 import Dropzone from './Dropzone';
 import ActionButton from './ActionButton';
 
-const ToolPage = ({ actionButtonLabel, headerText, acceptedFiles, onAction }) => {
+const ToolPage = ({ actionButtonLabel, acceptedFiles, dropzoneText, onAction, showPreview }) => {
   const [files, setFiles] = useState([]);
 
   const onDropAreaChange = (loadedFiles) => {
@@ -13,12 +13,12 @@ const ToolPage = ({ actionButtonLabel, headerText, acceptedFiles, onAction }) =>
 
   return (
     <Grid container justifyContent="center">
-      {headerText && (
-        <Typography variant="h4" sx={{ m: '0.25rem' }}>
-          {headerText}
-        </Typography>
-      )}
-      <Dropzone onChange={onDropAreaChange} acceptedFiles={acceptedFiles} />
+      <Dropzone
+        onChange={onDropAreaChange}
+        acceptedFiles={acceptedFiles}
+        dropzoneText={dropzoneText}
+        showPreview={showPreview}
+      />
 
       <ActionButton
         label={actionButtonLabel}

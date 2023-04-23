@@ -1,4 +1,4 @@
-import { Stack, Button } from '@mui/material';
+import { Stack, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PDFMerger from 'pdf-merger-js/browser';
 
@@ -23,7 +23,16 @@ const MergePDF = () => {
   return (
     <Stack>
       <Button onClick={() => navigate('/')}>Back to Home</Button>
-      <ToolPage actionButtonLabel="Merge" acceptedFiles={['application/pdf']} onAction={onMerge} />
+      <Typography variant="h4" sx={{ m: '0.25rem', textAlign: 'center' }}>
+        Only PDF files are accepted !
+      </Typography>
+      <ToolPage
+        actionButtonLabel="Merge"
+        acceptedFiles={['application/pdf']}
+        onAction={onMerge}
+        dropzoneText="Drag and drop one or multiple files here or click"
+        showPreview={false}
+      />
     </Stack>
   );
 };

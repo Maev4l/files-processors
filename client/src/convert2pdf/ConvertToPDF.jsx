@@ -1,4 +1,4 @@
-import { Stack, Button } from '@mui/material';
+import { Stack, Button, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import pdfMake from 'pdfmake';
 import { saveAs } from 'file-saver';
@@ -37,10 +37,14 @@ const ConvertToPDF = () => {
   return (
     <Stack>
       <Button onClick={() => navigate('/')}>Back to Home</Button>
+      <Typography variant="h4" sx={{ m: '0.25rem', textAlign: 'center' }}>
+        Only JPEG and PNG are supported !
+      </Typography>
       <ToolPage
         actionButtonLabel="Convert"
-        headerText="Only JPEG and PNG are supported !"
         acceptedFiles={['image/jpeg', 'image/jpg', 'image/png']}
+        dropzoneText="Drag and drop one or multiple files here or click"
+        showPreview
         onAction={onConvert}
       />
     </Stack>
